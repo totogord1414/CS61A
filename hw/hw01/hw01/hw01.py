@@ -66,6 +66,12 @@ def largest_factor(n):
     1
     """
     "*** YOUR CODE HERE ***"
+    i = 1
+    while(i * i < n):
+        i += 1
+        if(n % i == 0):
+            return n // i
+    return 1
 
 
 def hailstone(n):
@@ -88,4 +94,14 @@ def hailstone(n):
     1
     """
     "*** YOUR CODE HERE ***"
-
+    print(n)
+    times = 1
+    while n != 1:
+        times += 1
+        if n % 2 == 0:
+            n = n // 2
+            print(n)
+        else:
+            n = 3 * n + 1
+            print(n)
+    return times
