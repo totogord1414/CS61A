@@ -1,0 +1,5 @@
+'close-correct', (0, 66)
+'close_list-correct', (512, 66)
+'double_eights-correct', (1024, 66)
+'make_onion-correct', (1536, 66)
+'ten_pairs-correct', (2048, 66)
