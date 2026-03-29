@@ -7,6 +7,7 @@ from utils import (
     lines_from_file,
     count,
     deep_convert_to_tuple,
+    get_key_distances,
 )
 from ucb import main, interact, trace
 from datetime import datetime
@@ -45,6 +46,10 @@ def pick(paragraphs: list[str], select, k: int) -> str:
                 return p
             count_num += 1
     return '' 
+    """
+    one line solution:
+    return ([p for p in paragraphs if select(p)] + [''] * (k + 1))[k]
+    """ 
     # END PROBLEM 1
 
 
@@ -65,15 +70,16 @@ def about(keywords: list[str]):
 
     # BEGIN PROBLEM 2
     "*** YOUR CODE HERE ***"
+    return lambda paragraphs:any(word in keywords for word in split(lower(remove_punctuation(paragraphs))))
+"""
     def select(paragraphs: list):
         list_paragraph = split(lower(remove_punctuation(paragraphs))) 
         for words in keywords:
-            for search_word in list_paragraph:
-                if search_word == words:
-                    return True
+            if words in list_paragraph:
+                return True
         return False
     return select
-           
+"""
     # END PROBLEM 2
 
 
@@ -116,6 +122,11 @@ def accuracy(entered: str, source: str) -> float:
             correct += 1
         total += 1
     return correct / enter_len * 100.0 
+    """
+    one line solution
+    
+    return 100.0 if not entered_words and not source_words else 0.0 if not entered_words else sum(e == s for e, s in zip(entered_words, source_words)) / len(entered_words) * 100.0
+    """
     # END PROBLEM 3
 
 
@@ -196,6 +207,28 @@ def autocorrect(entered_word: str, word_list: list[str], diff_function, limit: i
     """
     # BEGIN PROBLEM 5
     "*** YOUR CODE HERE ***"
+    """
+    my previous solution
+    lowest = limit
+    lowest_word = entered_word
+    state = False 
+    false means there isn't another word that satisfy the current limit yet
+    for word in word_list:
+        if entered_word == word: 
+            return entered_word
+
+
+        curr = diff_function(entered_word, word, limit)
+        if curr <= lowest and state == False:
+            lowest_word = word
+            lowest = curr 
+            state = True
+        elif curr < lowest:
+            lowest_word = word
+            lowest = curr 
+    return lowest_word
+    """
+    return entered_word if entered_word in word_list else curr if (curr := min(word_list, key = lambda new_word: diff_function(entered_word, new_word, limit))) and diff_function(entered_word, curr, limit) <= limit else entered_word
     # END PROBLEM 5
 
 
@@ -222,8 +255,10 @@ def furry_fixes(entered: str, source: str, limit: int) -> int:
     5
     """
     # BEGIN PROBLEM 6
-    assert False, 'Remove this line'
+    return abs(len(entered) - len(source)) if len(entered) == 0 or len(source) == 0 else limit + 1 if limit < abs(len(entered) - len(source)) else (1 + furry_fixes(entered[1:] , source[1:], limit - 1)) if source[0] != entered[0] else furry_fixes(entered[1:], source[1:], limit)
     # END PROBLEM 6
+
+
 
 
 def minimum_mewtations(entered: str, source: str, limit: int) -> int:
@@ -243,34 +278,135 @@ def minimum_mewtations(entered: str, source: str, limit: int) -> int:
     >>> minimum_mewtations("ckiteus", "kittens", big_limit) # ckiteus -> kiteus -> kitteus -> kittens
     3
     """
-    assert False, 'Remove this line'
-    if ___________: # Base cases should go here, you may add more base cases as needed.
+    if limit < abs(len(entered) - len(source)) : # Base cases should go here, you may add more base cases as needed.
         # BEGIN
+        return limit + 1
         "*** YOUR CODE HERE ***"
         # END
+    if len(entered) == 0 or len(source) == 0:
+        return len(entered) + len(source)
+    if entered == source: 
+        return 0
     # Recursive cases should go below here
-    if ___________: # Feel free to remove or add additional cases
-        # BEGIN
-        "*** YOUR CODE HERE ***"
-        # END
+    if entered[0] == source[0]:
+        return minimum_mewtations(entered[1:], source[1:], limit)
     else:
-        add = ... # Fill in these lines
-        remove = ...
-        substitute = ...
+        add = minimum_mewtations(entered, source[1:], limit - 1) + 1 # Fill in these lines
+        remove = minimum_mewtations(entered[1:], source, limit - 1) + 1
+        substitute = minimum_mewtations(entered[1:], source[1:], limit - 1 ) + 1
         # BEGIN
         "*** YOUR CODE HERE ***"
+        return min(add, remove, substitute)
+    
+    """
+    below is my original code,which is too slow
+    if limit < 0 : # Base cases should go here, you may add more base cases as needed.
+
+        # BEGIN
+
+        return limit + 1
+
+        "* YOUR CODE HERE *"
+
+        # END
+
+    if entered == source:
+
+        return 0
+
+    # Recursive cases should go below here
+
+    entered += " "
+
+    source += " "
+
+    i = 0
+
+    for j in range(min(len(entered), len(source))):
+
+        i = j
+
+        if(entered[i] != source[i]):
+
+            break
+
+    if entered[i] == source[i]: # Feel free to remove or add additional cases
+
+        # BEGIN
+
+        "* YOUR CODE HERE *"
+
+        return abs(len(entered) - len(source))
+
+        # END
+
+    else:
+
+        add = minimum_mewtations( source[i] + entered[i:], source[i:], limit - 1) + 1 # Fill in these lines
+
+        remove = minimum_mewtations(entered[i + 1:], source[i:], limit - 1) + 1
+
+        substitute = minimum_mewtations(source[i] + entered[i + 1:], source[i:], limit - 1 ) + 1
+
+        # BEGIN
+
+        "* YOUR CODE HERE *"
+
+        return min(add, remove, substitute)
+    """
         # END
 
 
 # Ignore the line below
 minimum_mewtations = count(minimum_mewtations)
 
+KEY_DISTANCE = get_key_distances()
 
 def final_diff(entered: str, source: str, limit: int) -> int:
     """A diff function that takes in a string ENTERED, a string SOURCE, and a number LIMIT.
     If you implement this function, it will be used."""
-    assert False, "Remove this line to use your final_diff function."
+    memo = {}
+    def inner_diff(entered, source, limit):
+        memo_key = (entered, source, limit)
+        if memo_key in memo:
+            return memo[memo_key]
 
+
+
+        if limit < abs(len(entered) - len(source)) : # Base cases should go here, you may add more base cases as needed.
+            # BEGIN
+            return limit + 1
+            "*** YOUR CODE HERE ***"
+            # END
+        if len(entered) == 0 or len(source) == 0:
+            return len(entered) + len(source)
+        if entered == source: 
+            return 0
+        # Recursive cases should go below here
+        if entered[0] == source[0]:
+            return inner_diff(entered[1:], source[1:], limit)
+        elif entered[0].lower() == source[0].lower():
+            return inner_diff(entered[1:], source[1:], limit - 0.2) + 0.2
+        else:
+            add = inner_diff(entered, source[1:], limit - 1) + 1 # Fill in these lines
+
+            remove = inner_diff(entered[1:], source, limit - 1) + 1
+
+
+            sub_point = KEY_DISTANCE.get((entered[0], source[0]), 1)
+            substitute = inner_diff(entered[1:], source[1:], limit - sub_point ) + sub_point 
+
+            if len(entered) >= 2 and len(source) >= 2 and entered[0] == source[1] and source[0] == entered[1]:
+                swap = inner_diff(entered[2:], source[2:], limit - 1) + 1
+                result =  min(add, remove, substitute, swap)
+                memo[memo_key] = result
+                return result
+            # BEGIN
+            "*** YOUR CODE HERE ***"
+            result = min(add, remove, substitute)
+            memo[memo_key] = result
+            return result
+    return inner_diff(entered, source, limit)
 
 FINAL_DIFF_LIMIT = 6  # REPLACE THIS WITH YOUR LIMIT
 
@@ -305,6 +441,14 @@ def report_progress(entered: list[str], source: list[str], user_id: int, upload)
     """
     # BEGIN PROBLEM 8
     "*** YOUR CODE HERE ***"
+    assert len(entered) <= len(source) , "entered word can't be longer than source"
+    count = 0
+    while count < len(entered) and entered[count] == source[count]:
+        count += 1
+    word_progress = count / len(source)
+    dic = {'id':user_id, 'progress': word_progress}
+    upload(dic)
+    return word_progress
     # END PROBLEM 8
 
 
@@ -328,7 +472,8 @@ def time_per_word(words: list[str], timestamps_per_player: list[list[int]]) -> d
     """
     ts_by_player = timestamps_per_player  # A shorter name (for convenience)
     # BEGIN PROBLEM 9
-    times = []  # You may remove this line
+    times = [[player_timestamps[i + 1] - player_timestamps[i] for i in range(len(player_timestamps) - 1)]
+              for player_timestamps in timestamps_per_player]  # You may remove this line
     # END PROBLEM 9
     return {'words': words, 'times': times}
 
@@ -357,6 +502,13 @@ def fastest_words(words_and_times: dict) -> list[list[str]]:
     w_idxs = range(len(words))    # contains an *index* for each word
     # BEGIN PROBLEM 10
     "*** YOUR CODE HERE ***"
+    def find_min_time(player_num):
+        return get_time(times, player_num, word_index)
+    result = [[] for _ in pl_idxs] # make an empty list of list
+    for word_index in w_idxs:
+        curr_min_pl = min((player_index for player_index in pl_idxs),key = find_min_time)
+        result[curr_min_pl] += [words[word_index]]
+    return result
     # END PROBLEM 10
 
 

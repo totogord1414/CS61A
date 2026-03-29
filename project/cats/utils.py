@@ -99,7 +99,6 @@ def get_key_distances():
     for i in range(len(KEY_LAYOUT)):
         for j in range(len(KEY_LAYOUT[i])):
             compute_pairwise_distances(i, j, key_distance)
-
     max_value = max(key_distance.values())
     return {key : value * 8 / max_value for key, value in key_distance.items()}
 
