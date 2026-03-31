@@ -176,6 +176,14 @@ def memo_diff(diff_function):
     def memoized(entered, source, limit):
         # BEGIN PROBLEM EC
         "*** YOUR CODE HERE ***"
+        if(entered, source) not in cache or (limit > cache[(entered, source)][1] and cache[(entered, source)][2] == False):
+            result = diff_function(entered, source, limit)
+            if result <= limit:
+                cache[(entered, source)] = [result, limit, True]
+            else:
+                cache[(entered, source)] = [result, limit, False]
+            return result
+        return cache[(entered, source)][0]
         # END PROBLEM EC
 
     return memoized
@@ -185,7 +193,7 @@ def memo_diff(diff_function):
 # Phase 2 #
 ###########
 
-
+@memo
 def autocorrect(entered_word: str, word_list: list[str], diff_function, limit: int) -> str:
     """Returns the element of WORD_LIST that has the smallest difference
     from ENTERED_WORD based on DIFF_FUNCTION. If multiple words are tied for the smallest difference,
@@ -231,7 +239,6 @@ def autocorrect(entered_word: str, word_list: list[str], diff_function, limit: i
     return entered_word if entered_word in word_list else curr if (curr := min(word_list, key = lambda new_word: diff_function(entered_word, new_word, limit))) and diff_function(entered_word, curr, limit) <= limit else entered_word
     # END PROBLEM 5
 
-
 def furry_fixes(entered: str, source: str, limit: int) -> int:
     """A diff function for autocorrect that determines how many letters
     in ENTERED need to be substituted to create SOURCE, then adds the difference in
@@ -261,6 +268,7 @@ def furry_fixes(entered: str, source: str, limit: int) -> int:
 
 
 
+@memo_diff
 def minimum_mewtations(entered: str, source: str, limit: int) -> int:
     """A diff function for autocorrect that computes the edit distance from ENTERED to SOURCE.
     This function takes in a string ENTERED, a string SOURCE, and a number LIMIT.
