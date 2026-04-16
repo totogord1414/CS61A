@@ -109,7 +109,7 @@ class Ant(Insect):
     implemented = False  # Only implemented Ant classes should be instantiated
     food_cost = 0
     is_container = False
-
+    blocks_path = True
     # ADD CLASS ATTRIBUTES HERE
 
     def __init__(self, health: int = 1):
@@ -479,12 +479,23 @@ class SlowThrower(ThrowerAnt):
     name = 'Slow'
     food_cost = 6
     # BEGIN Problem EC 1
-    implemented = False   # Change to True to view in the GUI
+    implemented = True   # Change to True to view in the GUI
     # END Problem EC 1
 
     def throw_at(self, target: Bee | None):
         # BEGIN Problem EC 1
         "*** YOUR CODE HERE ***"
+        def slow_effect(target):
+            def slow_helper(gamestate):
+                if target.slowcycle == 0 or gamestate.time % 2 == 0:
+                    Bee.action(target, gamestate)
+                if target.slowcycle > 0:
+                    target.slowcycle -= 1
+            return slow_helper
+        if target is not None:
+            target.slowcycle = 5
+            target.action = slow_effect(target)
+                 
         # END Problem EC 1
 
 
@@ -494,12 +505,15 @@ class ScaryThrower(ThrowerAnt):
     name = 'Scary'
     food_cost = 6
     # BEGIN Problem EC 2
-    implemented = False   # Change to True to view in the GUI
+    implemented = True   # Change to True to view in the GUI
     # END Problem EC 2
 
     def throw_at(self, target: Bee | None):
         # BEGIN Problem EC 2
         "*** YOUR CODE HERE ***"
+        if target is not None:
+            target.scare(2)
+            
         # END Problem EC 2
 
 
@@ -509,14 +523,18 @@ class NinjaAnt(Ant):
     name = 'Ninja'
     damage = 1
     food_cost = 5
+    blocks_path = False
     # OVERRIDE CLASS ATTRIBUTES HERE
     # BEGIN Problem EC 3
-    implemented = False   # Change to True to view in the GUI
+    implemented = True   # Change to True to view in the GUI
     # END Problem EC 3
 
     def action(self, gamestate: GameState):
         # BEGIN Problem EC 3
         "*** YOUR CODE HERE ***"
+        bee_list = self.place.bees[:]
+        for bee in bee_list:
+            bee.reduce_health(self.damage)
         # END Problem EC 3
 
 
@@ -526,8 +544,12 @@ class LaserAnt(ThrowerAnt):
     name = 'Laser'
     food_cost = 10
     # OVERRIDE CLASS ATTRIBUTES HERE
+    insects_shot = 0
+    distance_down = 0.25
+    shot_down = 0.0625
+    base_damage = 2
     # BEGIN Problem EC 4
-    implemented = False   # Change to True to view in the GUI
+    implemented = True   # Change to True to view in the GUI
     # END Problem EC 4
 
     def __init__(self, health: int = 1):
@@ -536,12 +558,28 @@ class LaserAnt(ThrowerAnt):
 
     def insects_in_front(self) -> dict[Bee, int]:
         # BEGIN Problem EC 4
-        return {}
+        place = self.place
+        distance = 0
+        dic = {}
+        while not place.is_hive:
+            for bee in place.bees:
+                dic[bee] = distance
+            if place.ant is not None:
+                ant = place.ant
+                if ant is not self:
+                    dic[ant] = distance
+                if ant.is_container and ant.ant_contained is not None:#check container
+                    if ant.ant_contained is not self:
+                        dic.update({place.ant.ant_contained: distance})
+            place = place.entrance
+            distance +=  1
+        return dic
         # END Problem EC 4
 
     def calculate_damage(self, distance: int) -> float:
         # BEGIN Problem EC 4
-        return 0
+        damage = self.base_damage - distance * self.distance_down - self.insects_shot * self.shot_down
+        return max(damage, 0)
         # END Problem EC 4
 
     def action(self, gamestate: GameState):
@@ -569,6 +607,8 @@ class Bee(Insect):
     name = 'Bee'
     damage = 1
     is_waterproof = True
+    scared_before = False
+    length = 0
 
 
     def sting(self, ant: Ant):
@@ -587,7 +627,7 @@ class Bee(Insect):
         """Return True if this Bee cannot advance to the next Place."""
         # Special handling for NinjaAnt
         # BEGIN Problem EC 3
-        return self.place is not None and self.place.ant is not None
+        return self.place is not None and self.place.ant is not None and  self.place.ant.blocks_path
         # END Problem EC 3
 
     def action(self, gamestate: GameState):
@@ -598,7 +638,14 @@ class Bee(Insect):
         """
         destination = None
         if self.place:
-            destination = self.place.exit
+            if self.length > 0:
+                self.length -= 1
+                if not self.place.entrance.is_hive:
+                    destination = self.place.entrance
+                else:
+                    destination = self.place
+            else:
+                destination = self.place.exit
 
 
         if self.blocked() and self.place and self.place.ant:
@@ -621,6 +668,9 @@ class Bee(Insect):
         """
         # BEGIN Problem EC 2
         "*** YOUR CODE HERE ***"
+        if not self.scared_before:
+            self.scared_before = True
+            self.length = length
         # END Problem EC 2
 
 
